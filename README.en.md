@@ -20,7 +20,7 @@ A lightweight Windows desktop app for browsing and downloading from Pixiv: perso
 
 ## Getting started
 
-1. Download `澄阅-v1.0-Windows-x64.zip` from Releases, extract everything, and run `PixivLight.exe` (Windows 10/11 x64, no installation).
+1. Download `Chengyue-v1.0-Windows-x64.zip` from [Releases](https://github.com/poiity/chengyue/releases), extract everything, and run `PixivLight.exe` (Windows 10/11 x64, no installation).
 2. Click **Sign in to Pixiv** and sign in on the official Pixiv page. The app detects the sign-in and closes the window.
 3. If Pixiv is unreachable, use a system proxy / VPN, or enter a proxy address in Preferences (e.g. `http://127.0.0.1:7890`).
 

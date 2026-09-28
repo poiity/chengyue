@@ -20,7 +20,7 @@
 
 ## 使用
 
-1. 下载 Release 中的 `澄阅-v1.0-Windows-x64.zip`，完整解压后运行 `PixivLight.exe`（Windows 10/11 x64，无需安装）。
+1. 在 [Releases](https://github.com/poiity/chengyue/releases) 下载 `Chengyue-v1.0-Windows-x64.zip`，完整解压后运行 `PixivLight.exe`（Windows 10/11 x64，无需安装）。
 2. 点击「登录 Pixiv」，在官方登录页完成登录与验证；软件会自动识别并关闭登录窗口。
 3. 无法直连 Pixiv 时，使用系统代理 / VPN，或在偏好设置中填写代理地址（如 `http://127.0.0.1:7890`）。
 
