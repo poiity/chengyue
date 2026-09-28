@@ -1,0 +1,14 @@
+{
+  "name": "pixiv-light",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Pixiv Light — a personal illustration reader and download manager",
+  "main": "src/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.cjs",
+    "pack": "node scripts/package.cjs"
+  },
+  "devDependencies": { "electron": "41.10.7" }
+}

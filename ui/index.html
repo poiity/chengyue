@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' pixiv-image: data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'">
+  <title>澄阅 · Pixiv Light</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="#" id="brand-home"><span class="brand-mark" translate="no">澄</span><span>澄阅<small>PIXIV LIGHT</small></span></a>
+    <div class="nav-label">我的灵感空间</div>
+    <nav>
+      <button class="nav-item active" data-nav="recommend"><i data-icon="compass"></i>为你推荐</button>
+      <button class="nav-item" data-nav="feed"><i data-icon="sparkles"></i>关注动态</button>
+      <button class="nav-item" data-nav="following"><i data-icon="users"></i>关注画师</button>
+      <button class="nav-item" data-nav="bookmarks"><i data-icon="heart"></i>我的收藏</button>
+      <button class="nav-item" data-nav="history"><i data-icon="clock"></i>浏览历史</button>
+      <button class="nav-item" data-nav="downloads"><i data-icon="download"></i>下载中心<span class="nav-count" id="queue-count">0</span></button>
+    </nav>
+    <button class="mascot" id="mascot" aria-label="和澄澄打招呼" title="点一下，和澄澄打招呼"><span class="mascot-figure"><img class="mascot-body" src="assets/mascot.webp" alt="蓝发看板娘澄澄"><img class="mascot-blink" src="assets/mascot-blink.webp" alt=""></span><span id="mascot-message" aria-live="polite">今天，也一起发现喜欢的作品。</span></button>
+    <div class="sidebar-bottom">
+      <button class="nav-item" id="nav-settings"><i data-icon="settings"></i>偏好设置</button>
+      <button class="account-card" id="account-button"><span class="avatar" id="account-avatar" translate="no">P</span><span class="account-copy"><strong id="account-name" translate="no">尚未登录</strong><small id="account-caption">连接你的 Pixiv 账号</small></span><i data-icon="chevron-right"></i></button>
+      <div class="version"><span id="app-version">澄阅</span> · 为热爱留一份</div>
+    </div>
+  </aside>
+  <div class="app-shell">
+    <header class="topbar">
+      <form id="search-form" class="searchbox">
+        <i data-icon="search"></i>
+        <select id="search-mode" class="search-mode" aria-label="搜索模式"><option value="tag" data-note="用关键词发现作品">Tag 搜索</option><option value="artist" data-note="打开画师主页">画师 UID / PID</option><option value="artwork" data-note="直达指定作品">作品 PID</option></select>
+        <span class="search-divider"></span>
+        <input aria-controls="tag-suggestions" aria-expanded="false" role="combobox" id="query" aria-label="搜索内容" placeholder="搜索标签，发现下一份喜欢…" autocomplete="off" maxlength="150">
+        <button type="submit" class="search-submit" title="搜索" aria-label="搜索"><i data-icon="arrow-right"></i></button>
+        <div id="tag-suggestions" class="suggestions hidden" role="listbox" aria-label="标签联想"></div>
+      </form>
+      <button class="login-button" id="login-top"><i data-icon="user"></i><span>登录 Pixiv</span></button>
+    </header>
+    <div class="modebar" id="modebar">
+      <div class="segmented"><button class="active" id="mode-preview"><i data-icon="grid"></i>预览模式</button><button id="mode-download"><i data-icon="check-square"></i>下载模式</button></div>
+      <span class="mode-hint" id="mode-hint">发现、浏览，留住每一次心动</span>
+      <span class="page-context" id="page-context">为你推荐</span>
+      <button class="secondary refresh" id="refresh" title="刷新当前页面"><i data-icon="refresh"></i>刷新</button>
+      <div class="download-anchor"><button class="primary" id="download-button" disabled><i data-icon="download"></i><span id="download-button-text">下载作品</span><i data-icon="chevron-down"></i></button>
+      <section id="download-menu" class="download-menu hidden" aria-label="下载选项"></section></div>
+    </div>
+    <main id="main" tabindex="-1"></main>
+    <footer><span><span class="status-dot"></span><span id="connection-label">未登录 · 公开浏览</span></span><span>PIXIV LIGHT <span class="footer-separator">/</span> 让浏览轻一点，让收藏简单一点</span></footer>
+  </div>
+  <dialog id="viewer" class="viewer"><div id="viewer-content"></div></dialog>
+  <dialog id="settings-dialog" class="panel-dialog"></dialog>
+  <dialog id="bookmark-dialog" class="panel-dialog small"></dialog>
+  <dialog id="close-dialog" class="panel-dialog small"></dialog>
+  <dialog id="confirm-dialog" class="panel-dialog small"></dialog>
+  <div id="toasts" aria-live="polite"></div>
+  <script src="js/locale-en.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/base.js"></script>
+  <script src="js/gallery.js"></script>
+  <script src="js/viewer.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
