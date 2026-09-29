@@ -12,7 +12,7 @@
   --danger: #f3a5b9; --ok: #8be0bb; --shadow: 0 15px 55px #0008;
 }
 * { box-sizing: border-box; }
-body { margin: 0; font-family: Inter, LocalUI, 'Segoe UI', sans-serif; background: var(--bg); color: var(--ink); font-size: 14px; }
+body { margin: 0; font-family: Inter, LocalUI, 'Segoe UI', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', sans-serif; background: var(--bg); color: var(--ink); font-size: 14px; }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; border: 0; background: none; transition: background .18s, transform .18s, box-shadow .18s, color .18s; }
 button:active:not(:disabled) { transform: translateY(1px); }
@@ -454,3 +454,12 @@ html[lang=en] .brand { font-size: 22px; letter-spacing: .5px; gap: 10px; }
 .field-title { display: inline-flex; align-items: center; gap: 6px; }
 .premium-tag { padding: 1px 6px; border-radius: 6px; font-size: 9px; font-weight: 700; letter-spacing: .3px; color: #6b4600; background: linear-gradient(135deg, #ffd978, #f2b84b); }
 .field:has(select:disabled) .dropdown-trigger { cursor: not-allowed; }
+
+/* ---- macOS: hidden title bar ---- */
+/* The traffic lights sit over the top of the sidebar; the sidebar and top bar move the window, their controls do not. */
+.mac .sidebar { padding-top: 60px; }
+.mac .sidebar, .mac .topbar { -webkit-app-region: drag; }
+.mac .sidebar :is(a, button), .mac .topbar > * { -webkit-app-region: no-drag; }
+/* Drag regions ignore stacking, so they are switched off while a dialog covers them. */
+.mac body:has(dialog[open]) :is(.sidebar, .topbar) { -webkit-app-region: no-drag; }
+@media (max-height: 760px) { .mac .sidebar { padding-top: 50px; } }

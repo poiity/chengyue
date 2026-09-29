@@ -18,6 +18,11 @@ test('Windows file names cannot escape destination or use reserved devices', () 
   assert.equal(artworkName({ title: '夏日', userName: '画师' }), '夏日_画师');
   assert.equal([...safeName('😃'.repeat(120))].length, 90);
 });
+test('artwork names fit the 255-byte file name limit of macOS', () => {
+  const name = artworkName({ title: '😃'.repeat(48), userName: '𠮷'.repeat(28) });
+  assert.ok(Buffer.byteLength(name) <= 220 && name.startsWith('😃'), name);
+  assert.equal(artworkName({ title: '夏'.repeat(48), userName: '画'.repeat(20) }).length, 69);
+});
 test('IDs and image URLs are allowlisted', () => {
   assert.equal(validateId('1234'), '1234');
   for (const value of ['../x', '0', '12?x', '1;2', 'abc']) assert.throws(() => validateId(value));

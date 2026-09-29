@@ -1,4 +1,4 @@
-// Local error log. Secrets (session cookies, CSRF tokens) and the Windows user name are redacted
+// Local error log. Secrets (session cookies, CSRF tokens) and the system user name are redacted
 // before anything is written; account names, passwords and cookie values are never logged.
 const fs = require('node:fs');
 const path = require('node:path');
@@ -16,8 +16,9 @@ function redact(value) {
   let text = String(value ?? '');
   for (const [pattern, replacement] of patterns) text = text.replace(pattern, replacement);
   const home = os.homedir();
-  if (home) text = text.split(home).join('%USERPROFILE%');
-  return text.replace(/([A-Z]:\\Users\\)[^\\/\s]+/gi, '$1%USERNAME%').slice(0, 4000);
+  if (home) text = text.split(home).join(process.platform === 'win32' ? '%USERPROFILE%' : '~');
+  // Windows (C:\Users\name) and macOS (/Users/name) profile folders of any user.
+  return text.replace(/([A-Z]:\\Users\\)[^\\/\s]+/gi, '$1%USERNAME%').replace(/(\/Users\/)[^/\s]+/g, '$1%USERNAME%').slice(0, 4000);
 }
 class Logger {
   constructor(dir) { this.dir = dir; this.file = path.join(dir, 'pixiv-light.log'); this.recent = new Map(); }

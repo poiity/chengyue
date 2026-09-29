@@ -114,10 +114,10 @@ test('a follow category becomes one newest-first artwork list across all its art
   assert.ok(calls.every(p => p.tag === '风景' && p.rest === 'hide')); assert.equal(calls.length, 2);
   await lib.followingWorks({ tag: '风景', rest: 'hide', page: 1 }); assert.equal(calls.length, 2, 'category index is cached');
 });
-test('logs redact session cookies, CSRF tokens and the Windows user folder', () => {
+test('logs redact session cookies, CSRF tokens and the Windows / macOS user folder', () => {
   const home = os.homedir();
-  const text = redact(`Cookie: PHPSESSID=123_abcDEF; x-csrf-token: deadbeef {"token":"secret"} ${home}\\AppData C:\\Users\\someone\\x ?tt=abc`);
-  for (const secret of ['123_abcDEF', 'deadbeef', 'secret', home, 'someone', 'tt=abc']) assert.ok(!text.includes(secret), `${secret} leaked: ${text}`);
+  const text = redact(`Cookie: PHPSESSID=123_abcDEF; x-csrf-token: deadbeef {"token":"secret"} ${home}\\AppData C:\\Users\\someone\\x /Users/another/Library ?tt=abc`);
+  for (const secret of ['123_abcDEF', 'deadbeef', 'secret', home, 'someone', 'another', 'tt=abc']) assert.ok(!text.includes(secret), `${secret} leaked: ${text}`);
 });
 test('the logger writes, de-duplicates and rotates', async t => {
   const dir = await tempDir(t), log = new Logger(dir);

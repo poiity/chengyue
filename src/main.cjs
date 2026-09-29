@@ -1,5 +1,5 @@
 // Electron main process: windows, Pixiv session, IPC surface and local data.
-const { app, BrowserWindow, ipcMain, session, protocol, dialog, shell, Tray, Menu, nativeTheme, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, session, protocol, dialog, shell, Tray, Menu, nativeTheme, nativeImage, screen } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
@@ -19,15 +19,28 @@ if (process.env.PIXIV_LIGHT_TEST_DATA) app.setPath('userData', process.env.PIXIV
 if (!process.env.PIXIV_LIGHT_HIDDEN && !app.requestSingleInstanceLock()) app.exit(0);
 
 const PARTITION = 'persist:pixiv-light-account';
+const MAC = process.platform === 'darwin';
 const uiFile = path.join(__dirname, '..', 'ui', 'index.html');
 const uiUrl = pathToFileURL(uiFile).href;
 const logger = new Logger(path.join(app.getPath('userData'), 'logs'));
 let mainWindow, loginWindow, tray, client, downloads, library, memory, recommendations, archive, settings, dataDir;
 let quitRequested = false;
-// Interface language: "system" follows the Windows display language (Chinese or English).
+// Interface language: "system" follows the system display language (Chinese or English).
 const NATIVE = {
-  zh: { title: '澄阅 · Pixiv Light', open: '打开澄阅', quit: '退出澄阅', folder: '选择图片与 ZIP 保存目录', login: '登录 Pixiv · 官方网站', failed: '澄阅启动失败' },
-  en: { title: 'Chengyue · Pixiv Light', open: 'Open Chengyue', quit: 'Quit Chengyue', folder: 'Choose a folder for images and ZIP files', login: 'Sign in to Pixiv · official site', failed: 'Chengyue failed to start' }
+  zh: {
+    title: '澄阅 · Pixiv Light', open: '打开澄阅', quit: '退出澄阅', folder: '选择图片与 ZIP 保存目录', login: '登录 Pixiv · 官方网站', failed: '澄阅启动失败',
+    about: '关于澄阅', settings: '偏好设置…', hide: '隐藏澄阅', hideOthers: '隐藏其他', showAll: '全部显示',
+    edit: '编辑', undo: '撤销', redo: '重做', cut: '剪切', copy: '拷贝', paste: '粘贴', pasteAndMatchStyle: '粘贴并匹配样式', delete: '删除', selectAll: '全选',
+    view: '显示', resetZoom: '实际大小', zoomIn: '放大', zoomOut: '缩小', fullscreen: '进入全屏幕',
+    window: '窗口', minimize: '最小化', zoom: '缩放', close: '关闭窗口', front: '前置全部窗口'
+  },
+  en: {
+    title: 'Chengyue · Pixiv Light', open: 'Open Chengyue', quit: 'Quit Chengyue', folder: 'Choose a folder for images and ZIP files', login: 'Sign in to Pixiv · official site', failed: 'Chengyue failed to start',
+    about: 'About Chengyue', settings: 'Settings…', hide: 'Hide Chengyue', hideOthers: 'Hide Others', showAll: 'Show All',
+    edit: 'Edit', undo: 'Undo', redo: 'Redo', cut: 'Cut', copy: 'Copy', paste: 'Paste', pasteAndMatchStyle: 'Paste and Match Style', delete: 'Delete', selectAll: 'Select All',
+    view: 'View', resetZoom: 'Actual Size', zoomIn: 'Zoom In', zoomOut: 'Zoom Out', fullscreen: 'Toggle Full Screen',
+    window: 'Window', minimize: 'Minimize', zoom: 'Zoom', close: 'Close Window', front: 'Bring All to Front'
+  }
 };
 function language() {
   if (settings?.language === 'zh' || settings?.language === 'en') return settings.language;
@@ -138,7 +151,10 @@ function login() {
 // ---- Window, tray and close behaviour -----------------------------------------------------------
 function restore() { if (mainWindow.isMinimized()) mainWindow.restore(); mainWindow.show(); mainWindow.focus(); }
 function quit() { quitRequested = true; app.quit(); }
+// Windows keeps running in the tray; macOS keeps running in the Dock, where clicking the icon reopens the window.
+const canRunInBackground = () => MAC || !!tray;
 function createTray() {
+  if (MAC) return;
   try {
     tray = new Tray(path.join(__dirname, '..', 'ui', 'assets', 'app.png'));
     tray.on('double-click', restore);
@@ -150,10 +166,36 @@ function localizeTray() {
   tray.setToolTip(native('title'));
   tray.setContextMenu(Menu.buildFromTemplate([{ label: native('open'), click: restore }, { type: 'separator' }, { label: native('quit'), click: quit }]));
 }
-function closeTo(action) { if (action === 'tray' && tray) mainWindow.hide(); else quit(); }
+function localizeNative() { localizeTray(); if (MAC) Menu.setApplicationMenu(appMenu()); }
+// The macOS menu bar: standard app, edit (clipboard shortcuts in text fields need it), view and window menus.
+function appMenu() {
+  const item = (role, extra) => ({ role, label: native(role), ...extra });
+  return Menu.buildFromTemplate([
+    { label: app.name, submenu: [
+      item('about'), { type: 'separator' },
+      { label: native('settings'), accelerator: 'Command+,', click: () => { restore(); send('open-settings'); } }, { type: 'separator' },
+      item('hide'), item('hideOthers'), item('unhide', { label: native('showAll') }), { type: 'separator' },
+      { label: native('quit'), accelerator: 'Command+Q', click: quit }
+    ] },
+    { label: native('edit'), submenu: ['undo', 'redo', 'separator', 'cut', 'copy', 'paste', 'pasteAndMatchStyle', 'delete', 'selectAll'].map(role => role === 'separator' ? { type: role } : item(role)) },
+    { label: native('view'), submenu: [item('resetZoom'), item('zoomIn'), item('zoomOut'), { type: 'separator' }, item('togglefullscreen', { label: native('fullscreen') })] },
+    { label: native('window'), role: 'windowMenu', submenu: [item('minimize'), item('zoom'), item('close'), { type: 'separator' }, item('front')] }
+  ]);
+}
+function hideWindow() {
+  // A full-screen window hidden directly would leave an empty black Space behind on macOS.
+  if (MAC && mainWindow.isFullScreen()) { mainWindow.once('leave-full-screen', () => mainWindow.hide()); mainWindow.setFullScreen(false); }
+  else mainWindow.hide();
+}
+function closeTo(action) { if (action === 'tray' && canRunInBackground()) hideWindow(); else quit(); }
 function createWindow() {
+  // Smaller screens (a 13-inch laptop) open a window that still fits the work area.
+  const area = screen.getPrimaryDisplay().workAreaSize;
   mainWindow = new BrowserWindow({
-    width: 1440, height: 960, minWidth: 980, minHeight: 680, show: !process.env.PIXIV_LIGHT_HIDDEN, title: native('title'), backgroundColor: '#f5f8fd', autoHideMenuBar: true,
+    width: Math.max(980, Math.min(1440, area.width - 40)), height: Math.max(680, Math.min(960, area.height - 40)), minWidth: 980, minHeight: 680,
+    show: !process.env.PIXIV_LIGHT_HIDDEN, title: native('title'), backgroundColor: '#f5f8fd', autoHideMenuBar: true,
+    // macOS: the page draws up to the top edge and the traffic lights sit over the sidebar.
+    ...(MAC ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 20, y: 20 } } : {}),
     webPreferences: { offscreen: !!process.env.PIXIV_LIGHT_HIDDEN, backgroundThrottling: !process.env.PIXIV_LIGHT_HIDDEN, preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
   mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
@@ -165,7 +207,7 @@ function createWindow() {
   mainWindow.on('responsive', () => { unresponsive = false; });
   // The close button asks "exit or tray?" unless the user chose to remember an answer.
   mainWindow.on('close', event => {
-    if (quitRequested || !tray) return;
+    if (quitRequested || !canRunInBackground()) return;
     const behaviour = settings.closeBehavior;
     if (behaviour === 'exit' || unresponsive || mainWindow.webContents.isCrashed()) { quitRequested = true; return; }
     event.preventDefault();
@@ -177,6 +219,8 @@ function createWindow() {
 
 // ---- Startup -----------------------------------------------------------------------------------
 app.on('second-instance', () => { if (mainWindow) restore(); });
+// macOS: clicking the Dock icon brings back a window that was closed to the background.
+app.on('activate', () => { if (mainWindow && !mainWindow.isDestroyed()) restore(); });
 // The page asks for its language synchronously before anything is drawn, so English never flashes Chinese first.
 ipcMain.on('language', event => { event.returnValue = event.sender === mainWindow?.webContents ? language() : 'zh'; });
 app.on('web-contents-created', (_e, contents) => {
@@ -232,6 +276,12 @@ app.whenReady().then(async () => {
   downloads.on('failure', e => logger.warn('download', e));
   registerIpc(pixivSession);
   createTray();
+  if (MAC) {
+    Menu.setApplicationMenu(appMenu());
+    app.setAboutPanelOptions({ applicationName: native('title'), applicationVersion: app.getVersion(), version: '', copyright: 'MIT License' });
+    // The packaged app carries its own icon; a development run borrows it for the Dock.
+    if (!app.isPackaged) { const icon = nativeImage.createFromPath(path.join(__dirname, '..', 'build', 'icon.png')); if (!icon.isEmpty()) app.dock.setIcon(icon); }
+  }
   nativeTheme.on('updated', () => send('theme-changed', nativeTheme.shouldUseDarkColors));
   await createWindow();
   // Packaging smoke test: capture the first screen offscreen and exit.
@@ -242,7 +292,7 @@ function registerIpc(pixivSession) {
   const page = p => Math.max(1, Math.min(10000, Math.floor(Number(p) || 1)));
   const saveSettings = () => { writeJson('settings.json', settings); return settings; };
   const changed = value => { recommendations.clear(); return value; };
-  handle('init', () => ({ settings, jobs: downloads.snapshot(), version: app.getVersion(), dark: nativeTheme.shouldUseDarkColors, tray: !!tray, language: language() }));
+  handle('init', () => ({ settings, jobs: downloads.snapshot(), version: app.getVersion(), dark: nativeTheme.shouldUseDarkColors, tray: canRunInBackground(), language: language() }));
   handle('account-status', () => client.status());
   handle('login', login);
   handle('logout', async () => {
@@ -292,7 +342,7 @@ function registerIpc(pixivSession) {
       const before = language(); settings.language = args.language;
       // Switching language reloads the page so every view is drawn in the new language.
       client.lang = language(); recommendations.clear();
-      if (language() !== before) setImmediate(() => { localizeTray(); mainWindow.setTitle(native('title')); mainWindow.webContents.reload(); });
+      if (language() !== before) setImmediate(() => { localizeNative(); mainWindow.setTitle(native('title')); mainWindow.webContents.reload(); });
     }
     if (args.archiveBookmarks !== undefined) { if (typeof args.archiveBookmarks !== 'boolean') throw new Error('设置无效'); settings.archiveBookmarks = archive.enabled = args.archiveBookmarks; }
     if (args.closeBehavior !== undefined) { if (!['ask', 'exit', 'tray'].includes(args.closeBehavior)) throw new Error('关闭方式无效'); settings.closeBehavior = args.closeBehavior; }

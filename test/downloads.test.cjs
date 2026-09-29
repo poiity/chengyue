@@ -109,3 +109,15 @@ test('shutdown cancels active and queued work instead of starting another task',
   assert.equal((await terminal(manager,a)).status,'cancelled');
   assert.equal(manager.snapshot().find(j=>j.id===b).status,'cancelled');
 });
+test('ZIP publication falls back to an exclusive copy on drives without hard links', async t => {
+  const { dir, manager } = await fixture(t);
+  const link = fsp.link; fsp.link = async () => { throw Object.assign(new Error('not supported'), { code: 'ENOTSUP' }); };
+  t.after(() => { fsp.link = link; });
+  await fsp.writeFile(path.join(dir, '作品1_画师.zip'), 'keep');
+  const job = await terminal(manager, manager.enqueue({ items: [{ id: '1', range: '1-2' }], format: 'combined' }, dir));
+  assert.equal(job.status, 'completed', job.error);
+  assert.equal(path.basename(job.outputs[0]), '作品1_画师 (2).zip');
+  assert.equal(await fsp.readFile(path.join(dir, '作品1_画师.zip'), 'utf8'), 'keep');
+  assert.equal(zipEntries(await fsp.readFile(job.outputs[0])).length, 2);
+  assert.deepEqual((await fsp.readdir(dir)).filter(f => f.startsWith('.pixivlight-')), []);
+});

@@ -3,7 +3,9 @@ node_modules/
 
 # Build output (created by `pnpm run pack` next to the project folder, kept out just in case)
 PixivLight-*-Windows-x64/
+PixivLight-*-macOS-*/
 *.zip
+*.dmg
 
 # Logs and local test data
 *.log
@@ -14,5 +16,6 @@ pnpm-debug.log*
 .vscode/
 .idea/
 Thumbs.db
+build/icon.iconset/
 Desktop.ini
 .DS_Store

@@ -22,7 +22,14 @@ function safeName(value, max = 90) {
   if (/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i.test(s)) s = '_' + s;
   return s;
 }
-function artworkName(work) { return safeName(`${safeName(work.title, 48)}_${safeName(work.userName, 28)}`, 80); }
+// macOS (APFS) limits a file name to 255 UTF-8 bytes, not characters; emoji and rare CJK take 4 bytes each.
+// 220 bytes leaves room for the " (n)" numbering, "_等N部作品" and the ".zip" extension.
+function fitBytes(value, max = 220) {
+  let s = value;
+  while (Buffer.byteLength(s) > max) s = [...s].slice(0, -1).join('').replace(/[.\s]+$/g, '');
+  return s;
+}
+function artworkName(work) { return fitBytes(safeName(`${safeName(work.title, 48)}_${safeName(work.userName, 28)}`, 80)); }
 function validateId(id) {
   const s = String(id || '').trim();
   if (!/^[1-9]\d{0,15}$/.test(s)) throw new Error('请输入正确的数字 PID / UID');

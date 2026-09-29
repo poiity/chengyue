@@ -8,9 +8,10 @@ const channels = new Set([
   'choose-directory', 'save-proxy', 'save-image-mirror', 'test-image-mirror', 'enqueue', 'cancel-download',
   'retry-download', 'open-directory', 'open-logs', 'report-error', 'open-pixiv'
 ]);
-const events = new Set(['account-changed', 'downloads-changed', 'notice', 'theme-changed', 'close-requested']);
+const events = new Set(['account-changed', 'downloads-changed', 'notice', 'theme-changed', 'close-requested', 'open-settings']);
 contextBridge.exposeInMainWorld('pixiv', {
   language: ipcRenderer.sendSync('language') === 'en' ? 'en' : 'zh',
+  mac: process.platform === 'darwin',
   call: async (channel, args) => {
     if (!channels.has(channel)) throw new Error('不支持的操作');
     const result = await ipcRenderer.invoke(channel, args);

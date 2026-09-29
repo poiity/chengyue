@@ -2,9 +2,11 @@
 
 English | [简体中文](README.md)
 
-A lightweight Windows desktop app for browsing and downloading from Pixiv: personal recommendations, your following feed, bookmark management, animation playback and export, and batch downloads of original images. Built on Electron with no third-party runtime dependencies.
+**An unofficial, third-party Pixiv desktop client for Windows and macOS, with animation playback, bookmark management and batch downloads of original images.**
 
-> This project is not affiliated with pixiv Inc. and is not an official client. Use it with your own account for content you are allowed to view; it does not bypass membership, age or access restrictions.
+It covers personal recommendations, your following feed, bookmark management, animation playback and export, and batch downloads of original images. Built on Electron with no third-party runtime dependencies.
+
+> This is an unofficial third-party tool, not affiliated with or endorsed by pixiv Inc.; “pixiv” is a trademark of pixiv Inc. and is used here only to describe what the app works with. Use it with your own account for content you are allowed to view; it does not bypass membership, age or access restrictions.
 
 ## Features
 
@@ -15,14 +17,24 @@ A lightweight Windows desktop app for browsing and downloading from Pixiv: perso
 - **Viewer** — page navigation, arrow keys, animation playback, related works that load as you scroll, one-click bookmark, follow.
 - **Search** — tags (with Japanese tag suggestions), artist UID or artwork ID; Pixiv links can be pasted.
 - **Downloads** — original images, custom page ranges (e.g. `1-4,9-13`), animations as GIF or original frames; save as folders, one ZIP per work, or one combined ZIP.
-- **Chinese / English** — follows the Windows display language by default; switch in Preferences.
-- **Also** — light / dark / system theme, close to tray or quit, proxy and image mirror routes (e.g. i.pixiv.re), a local error log, and a blinking mascot.
+- **Chinese / English** — follows the system display language by default; switch in Preferences.
+- **Also** — light / dark / system theme, close to tray (keep running in the Dock on macOS) or quit, proxy and image mirror routes (e.g. i.pixiv.re), a local error log, and a blinking mascot.
 
 ## Getting started
 
-1. Download `Chengyue-v1.0-Windows-x64.zip` from [Releases](https://github.com/poiity/chengyue/releases), extract everything, and run `PixivLight.exe` (Windows 10/11 x64, no installation).
+1. Download from [Releases](https://github.com/poiity/chengyue/releases/latest):
+
+   | System | File | Notes |
+   | --- | --- | --- |
+   | Windows 10 / 11 (x64) | `Chengyue-v1.0-Windows-x64.zip` | Portable: extract everything and run `PixivLight.exe` |
+   | macOS 12+ · Apple silicon (M1 and later) | `Chengyue-v1.0-macOS-AppleSilicon.dmg` | Tested on M-series Macs |
+   | macOS 12+ · Intel | `Chengyue-v1.0-macOS-Intel.dmg` | Not tested on real hardware — feedback welcome |
+
+   On macOS, open the DMG and drag Chengyue (澄阅) into Applications.
 2. Click **Sign in to Pixiv** and sign in on the official Pixiv page. The app detects the sign-in and closes the window.
 3. If Pixiv is unreachable, use a system proxy / VPN, or enter a proxy address in Preferences (e.g. `http://127.0.0.1:7890`).
+
+**First launch on macOS.** The app is not signed with an Apple Developer ID or notarized, so macOS says it cannot verify the developer (or that the app is damaged). Allow it once: open it, dismiss the warning, then click **Open Anyway** in System Settings → Privacy & Security — or run `xattr -dr com.apple.quarantine /Applications/澄阅.app` in Terminal. Closing the window can keep the app running in the background (downloads continue); click the Dock icon to bring it back and press ⌘Q to quit. ⌘, opens Settings, ⌘K focuses search.
 
 ## Bookmark dates
 
@@ -39,7 +51,7 @@ Like the website, the app reads bookmark months from Pixiv's monthly summary (`/
 - Sign-in detection runs in an isolated world; web permissions are denied; only one instance runs at a time.
 - Bookmark and follow writes are never retried automatically; bulk removal and clearing history ask for confirmation.
 - Image mirrors only receive public image addresses, never cookies or account data.
-- Local data: session, settings, download history, tag preferences, bookmark dates and months, bookmark archive, error log (cookies, tokens and the Windows user name are redacted). Browsing history stays in memory and is cleared on quit.
+- Local data: session, settings, download history, tag preferences, bookmark dates and months, bookmark archive, error log (cookies, tokens and the system user name are redacted). Browsing history stays in memory and is cleared on quit.
 
 Pixiv's web API is not a stable public API; site changes may require updates.
 
@@ -47,11 +59,14 @@ Pixiv's web API is not a stable public API; site changes may require updates.
 
 Requires Node.js 22.12+ and pnpm.
 
-```powershell
+```bash
 pnpm install     # installs Electron only (dev dependency)
 pnpm start
 pnpm test        # node --test
-pnpm run pack    # portable folder + ZIPs next to the project folder
+pnpm run pack    # builds for the current OS, next to the project folder:
+                 #   Windows: portable folder + ZIPs; macOS: 澄阅.app + DMG (this Mac's architecture;
+                 #   pnpm run pack -- --arch x64 for Intel)
+pnpm run icon    # re-renders build/icon.png and build/icon.icns (macOS)
 ```
 
 The interface text is written in Chinese; `ui/js/locale-en.js` maps it to English and `ui/js/i18n.js` applies it. See the Chinese README for the full directory overview, and [CHANGELOG.md](CHANGELOG.md) for release notes.

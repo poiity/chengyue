@@ -8,7 +8,8 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test test/*.test.cjs",
-    "pack": "node scripts/package.cjs"
+    "pack": "node scripts/package.cjs",
+    "icon": "electron scripts/icon.cjs"
   },
   "devDependencies": { "electron": "41.10.7" }
 }

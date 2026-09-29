@@ -14,7 +14,7 @@ function settingsHtml() {
   const s = state.settings, a = state.account;
   return `<div class="dialog-heading"><h2>偏好设置</h2><button class="icon-button" data-dialog-close aria-label="关闭设置">${icon('close')}</button></div>
   <section class="setting-section"><h3>我的 Pixiv 账号</h3><p>${a ? `${esc(a.name)} · UID ${esc(a.id)} · ${a.premium ? 'Premium 会员' : '普通账号'}` : '在独立的 Pixiv 官方登录窗口完成登录；登录状态保留在这台电脑上。软件不收集或保存账号密码。'}</p><div class="dialog-actions"><button class="primary" data-set="login">${a ? '打开 Pixiv 登录窗口' : '登录 Pixiv'}</button><button class="secondary" data-set="refresh-account">刷新登录状态</button>${a ? '<button class="secondary" data-set="logout">退出登录</button>' : ''}</div></section>
-  <section class="setting-section"><h3>外观与关闭行为</h3><div class="filter-row">${selectField('theme-setting', '界面主题', [['light', '浅色'], ['dark', '深色'], ['system', '跟随系统']], s.theme || 'light')}${selectField('language-setting', '界面语言', [['system', '跟随系统'], ['zh', '简体中文'], ['en', 'English']], s.language || 'system')}${selectField('close-setting', '点击关闭按钮时', [['ask', '每次询问'], ['exit', '直接退出软件'], ['tray', '最小化到系统托盘']], s.closeBehavior || 'ask')}</div><p>托盘模式会保留下载与本次浏览历史；右键托盘图标可以真正退出。</p></section>
+  <section class="setting-section"><h3>外观与关闭行为</h3><div class="filter-row">${selectField('theme-setting', '界面主题', [['light', '浅色'], ['dark', '深色'], ['system', '跟随系统']], s.theme || 'light')}${selectField('language-setting', '界面语言', [['system', '跟随系统'], ['zh', '简体中文'], ['en', 'English']], s.language || 'system')}${selectField('close-setting', '点击关闭按钮时', [['ask', '每次询问'], ['exit', '直接退出软件'], ['tray', MAC ? '关闭窗口，在后台运行' : '最小化到系统托盘']], s.closeBehavior || 'ask')}</div><p>${MAC ? '后台运行会保留下载与本次浏览历史；点击程序坞中的图标即可恢复窗口，按 ⌘Q 真正退出。' : '托盘模式会保留下载与本次浏览历史；右键托盘图标可以真正退出。'}</p></section>
   <section class="setting-section"><h3>下载保存位置</h3><p>${esc(s.downloadDir)}</p><button class="secondary" data-set="directory">${icon('folder')}选择文件夹</button><p>ZIP 默认名称为“作品名称_作者名字”。同名文件自动编号，不覆盖已有文件。动图可保存为 GIF，或原始帧加帧时长文件。</p></section>
   <section class="setting-section"><h3>网络代理</h3><p>默认使用系统代理。若无法连接 Pixiv，可填写本机已有代理地址。</p><form id="proxy-form" class="dialog-actions"><input class="text-input" aria-label="代理地址" placeholder="http://127.0.0.1:7890" value="${esc(s.proxy)}"><button type="submit" class="secondary">保存</button></form></section>
   <section class="setting-section"><h3>图片线路 · 镜像加速</h3><p>作品图片与原图下载可以改走公共镜像（例如 i.pixiv.re，它转发 i.pximg.net 的公开图片）。镜像只经手图片地址，不会收到你的账号或 Cookie；登录、搜索、收藏与关注仍直接连接 www.pixiv.net。</p><div class="choice-grid three">${imageRoutes.map(([value, title, note]) => `<label class="choice-card"><input type="radio" name="image-mode" value="${value}" ${value === (s.imageMode || 'official') ? 'checked' : ''}><span><strong>${title}</strong><small>${note}</small></span></label>`).join('')}</div><form id="mirror-form" class="dialog-actions"><input class="text-input" id="mirror-host" aria-label="镜像域名" value="${esc(s.imageMirror || 'i.pixiv.re')}" placeholder="i.pixiv.re" maxlength="100"><button type="submit" class="secondary">保存镜像</button><button type="button" class="secondary" data-set="test-mirror">测试线路</button></form><p id="mirror-result" class="route-result" aria-live="polite"></p><p class="help-text">登录后关闭代理时，图片可由镜像加载；作品信息、搜索和收藏是否可用，取决于当前网络能否直连 www.pixiv.net。</p></section>
@@ -59,6 +59,8 @@ async function saveRoute(mode, host) {
 }
 const settingsEl = $('#settings-dialog');
 dismissOnBackdrop(settingsEl);
+// macOS: the app menu's Settings… item (⌘,).
+bridge.on('open-settings', () => guarded(settingsDialog)());
 settingsEl.addEventListener('click', e => {
   if (e.target.closest('[data-dialog-close]')) return settingsEl.close();
   const button = e.target.closest('[data-set]'); if (button) guarded(settingActions[button.dataset.set])();
@@ -77,10 +79,10 @@ settingsEl.addEventListener('submit', e => {
   if (e.target.id === 'mirror-form') guarded(() => saveRoute($('[name="image-mode"]:checked', settingsEl).value, $('#mirror-host').value))();
 });
 
-/* The window's close button asks whether to exit or keep running in the tray. */
+/* The window's close button asks whether to exit or keep running in the tray (the Dock on macOS). */
 const closeEl = $('#close-dialog');
 bridge.on('close-requested', () => {
-  openDialog(closeEl, `<div class="dialog-heading"><h2>关闭澄阅</h2><button class="icon-button" data-close-cancel aria-label="取消">${icon('close')}</button></div><p class="help-text">要退出软件，还是最小化到系统托盘继续运行？托盘模式会保留下载任务与本次浏览历史。</p><div class="choice-grid"><button class="choice-card action" data-close-action="tray"><span>${icon('minimize')}<strong>最小化到托盘</strong><small>双击托盘图标可恢复窗口</small></span></button><button class="choice-card action" data-close-action="exit"><span>${icon('power')}<strong>退出软件</strong><small>正在进行的下载会被取消</small></span></button></div><label class="check-row"><input type="checkbox" id="close-remember">不再显示此窗口（可在偏好设置中更改）</label>`);
+  openDialog(closeEl, `<div class="dialog-heading"><h2>关闭澄阅</h2><button class="icon-button" data-close-cancel aria-label="取消">${icon('close')}</button></div><p class="help-text">${MAC ? '要退出软件，还是关闭窗口在后台继续运行？后台运行会保留下载任务与本次浏览历史。' : '要退出软件，还是最小化到系统托盘继续运行？托盘模式会保留下载任务与本次浏览历史。'}</p><div class="choice-grid"><button class="choice-card action" data-close-action="tray"><span>${icon('minimize')}<strong>${MAC ? '在后台运行' : '最小化到托盘'}</strong><small>${MAC ? '点击程序坞图标可恢复窗口' : '双击托盘图标可恢复窗口'}</small></span></button><button class="choice-card action" data-close-action="exit"><span>${icon('power')}<strong>退出软件</strong><small>正在进行的下载会被取消</small></span></button></div><label class="check-row"><input type="checkbox" id="close-remember">不再显示此窗口（可在偏好设置中更改）</label>`);
   $('[data-close-action="tray"]', closeEl).focus();
 });
 closeEl.addEventListener('click', e => {

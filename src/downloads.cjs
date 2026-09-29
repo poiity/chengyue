@@ -12,6 +12,7 @@ const { parsePages, artworkName, validateId, imageUrl } = require('./core.cjs');
 
 const FORMATS = ['images', 'separate', 'combined'];
 const IMAGE_EXT = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif'];
+const NO_HARD_LINKS = ['EPERM', 'ENOTSUP', 'EOPNOTSUPP', 'ENOSYS', 'EXDEV'];
 async function availablePath(dir, name, ext = '') {
   for (let n = 0; n < 10000; n++) {
     const candidate = path.join(dir, `${name}${n ? ` (${n + 1})` : ''}${ext}`);
@@ -170,7 +171,15 @@ class DownloadManager extends EventEmitter {
     // Hard-link publication is atomic, on the same volume, and refuses overwrites.
     for (;;) {
       const output = await availablePath(dir, base, '.zip');
-      try { await fsp.link(tmp, output); return output; } catch (e) { if (e.code !== 'EEXIST') throw e; }
+      try { await fsp.link(tmp, output); return output; } catch (e) {
+        if (e.code === 'EEXIST') continue;
+        if (!NO_HARD_LINKS.includes(e.code)) throw e;
+      }
+      // exFAT / FAT32 drives (common for external disks on macOS) have no hard links: an exclusive copy also refuses overwrites.
+      try { await fsp.copyFile(tmp, output, fs.constants.COPYFILE_EXCL); return output; } catch (e) {
+        if (e.code === 'EEXIST') continue;
+        await fsp.rm(output, { force: true }); throw e;
+      }
     }
   }
   // Removes finished records only; files already saved and running or queued jobs are untouched.

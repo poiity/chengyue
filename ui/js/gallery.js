@@ -21,7 +21,7 @@ function galleryBody() {
   if (state.busy) return `<div class="loading-line"></div><p class="help-text">${{ bookmarks: '正在读取收藏；组合筛选会检索全部匹配收藏，请稍候。', artist: state.title ? '正在搜索画师的全部作品标题，首次索引可能需要一些时间…' : '正在读取画师作品…', feed: state.followTag ? '正在汇总该分类画师的作品…' : '正在读取关注动态…' }[state.view] || '正在为你准备作品…'}</p><div class="grid">${'<div class="skeleton"></div>'.repeat(8)}</div>`;
   if (state.view === 'following') return state.people.length ? `<div class="people-grid">${state.people.map(u => `<button class="person-card" data-person="${esc(u.id)}"><img src="${esc(imageSrc(u.avatar))}" alt=""><strong translate="no">${esc(u.name)}</strong><small>UID ${esc(u.id)}</small><span class="person-works">${u.works.slice(0, 3).map(w => `<img src="${esc(imageSrc(w.cover))}" alt="" loading="lazy">`).join('')}</span><span class="person-go">浏览作品 ${icon('arrow-right')}</span></button>`).join('')}</div>${pagination()}` : empty('这个分类暂时没有画师', '请选择其他关注分类，或切换公开 / 不公开关注。');
   if (state.works.length) return `<div class="grid">${state.works.map(artCard).join('')}</div>${pagination()}`;
-  return state.view === 'history' ? empty('本次还没有浏览记录', '打开一部作品，它就会出现在这里。真正退出软件后自动清空；最小化到托盘不会清空。') : empty('暂时没有匹配的作品', '可以调整筛选条件，或点击刷新。');
+  return state.view === 'history' ? empty('本次还没有浏览记录', MAC ? '打开一部作品，它就会出现在这里。真正退出软件后自动清空；关闭窗口在后台运行时不会清空。' : '打开一部作品，它就会出现在这里。真正退出软件后自动清空；最小化到托盘不会清空。') : empty('暂时没有匹配的作品', '可以调整筛选条件，或点击刷新。');
 }
 function followFilters(includeAll) {
   const tags = state.followTags.map(t => [t, t]);
